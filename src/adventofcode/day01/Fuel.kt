@@ -3,14 +3,29 @@ package adventofcode.day01
 import kotlin.math.floor
 
 fun main() {
-    val totalFuelRequirement = parseInput(input).map(::fuelRequiredForMass).sum()
-    print(totalFuelRequirement)
+    val massForModules = parseInput(input)
+    val sumOfFuelForMass = massForModules
+        .map(::fuelRequiredForMass)
+        .sum()
+    println("Fuel for mass: $sumOfFuelForMass")
+
+    val sumOfFuelForMassAndFuel = massForModules
+        .map(::fuelRequiredForMassIncludingExtraFuel)
+        .sum()
+    println("Fuel for mass and fuel: $sumOfFuelForMassAndFuel")
 }
 
 fun parseInput(input: String): List<Int> = input.lines().map { it.toInt() }
 
-// to find the fuel required for a module, take its mass, divide by three, round down, and subtract 2
-fun fuelRequiredForMass(mass: Number) = floor(mass.toDouble() / 3).toInt() - 2
+// Fuel required for a module, take its mass, divide by three, round down, and subtract 2
+fun fuelRequiredForMass(mass: Number): Int = floor(mass.toDouble() / 3).toInt() - 2
+
+// Fuel itself requires fuel just like a module, mass that would require negative fuel should instead be treated as if it requires zero fuel
+fun fuelRequiredForMassIncludingExtraFuel(mass: Number): Int {
+    val fuel = fuelRequiredForMass(mass)
+    if (fuel <= 0) return 0
+    return fuel + fuelRequiredForMassIncludingExtraFuel(fuel)
+}
 
 private val input = """51590
 53619

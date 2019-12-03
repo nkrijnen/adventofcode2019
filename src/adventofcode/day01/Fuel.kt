@@ -27,7 +27,7 @@ fun fuelRequiredForMassIncludingExtraFuel(mass: Number): Int {
     return fuel + fuelRequiredForMassIncludingExtraFuel(fuel)
 }
 
-private val input = """51590
+private const val input = """51590
 53619
 101381
 81994

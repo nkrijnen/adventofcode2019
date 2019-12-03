@@ -3,7 +3,10 @@ package adventofcode.day3
 import adventofcode.day3.Direction.*
 import kotlin.math.absoluteValue
 
-fun Iterable<Point>.closestToCentralPort() = this.minBy { it.distanceFromCentralPort() }
+fun distanceToIntersectionClosestToCentralPort(wire1: Wire, wire2: Wire) =
+    (wire1 intersections wire2).closestToCentralPort()?.distanceFromCentralPort()
+
+private fun Iterable<Point>.closestToCentralPort() = this.minBy { it.distanceFromCentralPort() }
 
 class Wire(path: String) {
     private val lines = path.toLines()
@@ -11,10 +14,10 @@ class Wire(path: String) {
     private fun allPoints(): Set<Point> = lines.flatMap { it.allPointsExcludingStart() }
         .filter { it.distanceFromCentralPort() != 0 }.toSet()
 
-    infix fun intersections(other: Wire) = this.allPoints() intersect other.allPoints()
+    internal infix fun intersections(other: Wire) = this.allPoints() intersect other.allPoints()
 }
 
-class Line internal constructor(private val start: Point, private val instruction: Instruction) {
+internal class Line internal constructor(private val start: Point, private val instruction: Instruction) {
     private val end: Point = start + instruction
 
     fun allPointsExcludingStart(): Set<Point> {
@@ -29,7 +32,7 @@ class Line internal constructor(private val start: Point, private val instructio
     }
 }
 
-data class Point(private val x: Int, private val y: Int) {
+internal data class Point(private val x: Int, private val y: Int) {
     fun distanceFromCentralPort() = x.absoluteValue + y.absoluteValue
 
     internal operator fun plus(instruction: Instruction): Point {

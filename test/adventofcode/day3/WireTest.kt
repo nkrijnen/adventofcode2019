@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 // https://adventofcode.com/2019/day/3
-internal class PathTest {
+internal class WireTest {
     @Test
     fun `calculate new point using instruction`() {
         assertEquals(Point(4, 4), Point(2, 4) + Instruction("R2"))
@@ -17,39 +17,22 @@ internal class PathTest {
     }
 
     @Test
-    fun `sample case 1`() {
+    fun `part 1 sample 1`() {
         val wire1 = Wire("R75,D30,R83,U83,L12,D49,R71,U7,L72")
         val wire2 = Wire("U62,R66,U55,R34,D71,R55,D58,R83")
-        val intersectionPoints = wire1 intersections wire2
-
-        assertEquals(
-            159,
-            intersectionPoints.closestToCentralPort()?.distanceFromCentralPort()
-        )
+        assertEquals(159, distanceToIntersectionClosestToCentralPort(wire1, wire2))
     }
 
     @Test
-    fun `sample case 2`() {
+    fun `part 1 sample 2`() {
         val wire1 = Wire("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51")
         val wire2 = Wire("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
-        val intersectionPoints = wire1 intersections wire2
-
-        assertEquals(
-            135,
-            intersectionPoints.closestToCentralPort()?.distanceFromCentralPort()
-        )
+        assertEquals(135, distanceToIntersectionClosestToCentralPort(wire1, wire2))
     }
 
     @Test
     fun `part 1`() {
-        val wire1 = Wire(input1)
-        val wire2 = Wire(input2)
-        val intersectionPoints = wire1 intersections wire2
-
-        assertEquals(
-            403,
-            intersectionPoints.closestToCentralPort()?.distanceFromCentralPort()
-        )
+        assertEquals(403, distanceToIntersectionClosestToCentralPort(Wire(input1), Wire(input2)))
     }
 }
 

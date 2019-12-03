@@ -12,7 +12,7 @@ internal class WireTest {
 
     @Test
     fun `create line from point and instruction`() {
-        val result = Line(Point(2, 4), Instruction("D2"))
+        val result = Segment(Point(2, 4), Instruction("D2"))
         assertEquals(setOf(Point(2, 3), Point(2, 2)), result.allPointsExcludingStart())
     }
 
@@ -33,6 +33,25 @@ internal class WireTest {
     @Test
     fun `part 1`() {
         assertEquals(403, distanceToIntersectionClosestToCentralPort(Wire(input1), Wire(input2)))
+    }
+
+    @Test
+    fun `part 2 sample 1`() {
+        val wire1 = Wire("R75,D30,R83,U83,L12,D49,R71,U7,L72")
+        val wire2 = Wire("U62,R66,U55,R34,D71,R55,D58,R83")
+        assertEquals(610, shortestRouteToCentralPortVia(wire1, wire2))
+    }
+
+    @Test
+    fun `part 2 sample 2`() {
+        val wire1 = Wire("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51")
+        val wire2 = Wire("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
+        assertEquals(410, shortestRouteToCentralPortVia(wire1, wire2))
+    }
+
+    @Test
+    fun `part 2`() {
+        assertEquals(4158, shortestRouteToCentralPortVia(Wire(input1), Wire(input2)))
     }
 }
 

@@ -1,4 +1,4 @@
-package adventofcode.day3
+package adventofcode.day03
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

@@ -1,6 +1,6 @@
-package adventofcode.day3
+package adventofcode.day03
 
-import adventofcode.day3.Direction.*
+import adventofcode.day03.Direction.*
 import kotlin.math.absoluteValue
 
 fun distanceToIntersectionClosestToCentralPort(wire1: Wire, wire2: Wire) =

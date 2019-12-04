@@ -26,8 +26,7 @@ private fun Iterable<Point>.closestToCentralPort() = this.minBy { it.distanceFro
 class Wire(path: String) {
     private val path = path.toLines()
 
-    private fun allPoints(): Set<Point> = path.flatMap { it.allPointsExcludingStart() }
-        .filter { it.distanceFromCentralPort() != 0 }.toSet()
+    private fun allPoints(): Set<Point> = path.flatMap { it.allPointsExcludingStart() }.toSet()
 
     internal infix fun intersections(other: Wire) = this.allPoints() intersect other.allPoints()
 

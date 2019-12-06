@@ -3,45 +3,23 @@ package adventofcode.day05
 import adventofcode.day05.ParamMode.IMMEDIATE
 import adventofcode.day05.ParamMode.POSITION
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class AirConditioningTest {
     @Test
-    fun `full opcode parse`() {
+    fun `should extract opcode`() {
         assertEquals(Opcode.ADD, 1.toOpcode())
         assertEquals(Opcode.END, 99.toOpcode())
-        assertEquals(
-            FullOpcode(
-                Opcode.ADD,
-                listOf(
-                    POSITION,
-                    POSITION,
-                    POSITION
-                )
-            ), FullOpcode(1)
-        )
-        assertEquals(
-            FullOpcode(
-                Opcode.MUL,
-                listOf(
-                    POSITION,
-                    IMMEDIATE,
-                    POSITION
-                )
-            ),
-            FullOpcode(1002)
-        )
-        assertEquals(
-            FullOpcode(
-                Opcode.OUT,
-                listOf(
-                    IMMEDIATE,
-                    POSITION,
-                    IMMEDIATE
-                )
-            ),
-            FullOpcode(10104)
-        )
+        assertThrows<IllegalArgumentException> { 98.toOpcode() }
+    }
+
+    @Test
+    fun `should extract parameter modes`() {
+        assertEquals(listOf(POSITION, POSITION, POSITION), 1.toParamModes())
+        assertEquals(listOf(POSITION, IMMEDIATE, POSITION), 1002.toParamModes())
+        assertEquals(listOf(IMMEDIATE, POSITION, IMMEDIATE), 10104.toParamModes())
+        assertEquals(listOf(POSITION, POSITION, IMMEDIATE), 10004.toParamModes())
     }
 
     @Test

@@ -5,66 +5,79 @@ import adventofcode.day05.ParamMode.POSITION
 
 typealias Program = List<Int>
 typealias Memory = MutableList<Int>
+typealias Output = MutableList<Int>
 
 fun String.toProgram(): Program = this.split(",").map(String::toInt)
 
 class IntcodeProcessor(private val program: Program) {
     fun run(input: Int): List<Int> {
-        val output = mutableListOf<Int>()
+        val output: Output = mutableListOf()
         val memory: Memory = program.toMutableList()
         var opcodeIdx = 0
-        loop@ while (true) {
-            val op = FullOpcode(memory[opcodeIdx])
-            when (op.opcode) {
-                Opcode.ADD -> memory[memory[opcodeIdx + 3]] =
-                    memory.read(opcodeIdx, 1, op) + memory.read(opcodeIdx, 2, op)
-                Opcode.MUL -> memory[memory[opcodeIdx + 3]] =
-                    memory.read(opcodeIdx, 1, op) * memory.read(opcodeIdx, 2, op)
-                Opcode.INP -> memory[memory[opcodeIdx + 1]] = input
-                Opcode.OUT -> output += memory.read(opcodeIdx, 1, op)
-                Opcode.END -> break@loop
-            }
-            opcodeIdx += op.opcode.length
+        while (opcodeIdx >= 0) {
+            val ctx = OpContext(opcodeIdx, memory, input, output)
+            opcodeIdx = ctx.opcode.execute(ctx)
         }
         return output
     }
 }
 
-private fun Memory.read(opcodeIdx: Int, param: Int, op: FullOpcode): Int =
-    if (op.modeFor(param - 1) == POSITION)
-        this[this[opcodeIdx + param]]
-    else
-        this[opcodeIdx + param]
-
-data class FullOpcode(val opcode: Opcode, val paramModes: List<ParamMode>) {
-    fun modeFor(param: Int): ParamMode {
-        return paramModes[param]
-    }
-
-    internal constructor (
-        value: Int
-    ) : this(
-        value.toString().takeLast(2).toInt().toOpcode(),
-        listOf(
-            if (value / 100 % 10 == 1) IMMEDIATE else POSITION,
-            if (value / 1000 % 10 == 1) IMMEDIATE else POSITION,
-            if (value / 10000 % 10 == 1) IMMEDIATE else POSITION
-        )
-    )
+internal enum class Opcode(val code: Int, val execute: (OpContext) -> Int) {
+    ADD(1, {
+        it.writeAtParam(3) { it.resolveParam(1) + it.resolveParam(2) }
+        it.opcodeIdx + 4
+    }),
+    MUL(2, {
+        it.writeAtParam(3) { it.resolveParam(1) * it.resolveParam(2) }
+        it.opcodeIdx + 4
+    }),
+    INP(3, {
+        it.writeAtParam(1) { it.input }
+        it.opcodeIdx + 2
+    }),
+    OUT(4, {
+        it.output += it.resolveParam(1)
+        it.opcodeIdx + 2
+    }),
+    END(99, { -1 })
 }
 
-enum class Opcode(val code: Int, val length: Int) {
-    ADD(1, 4),
-    MUL(2, 4),
-    INP(3, 2),
-    OUT(4, 2),
-    END(99, 1)
+internal fun Int.toOpcode(): Opcode {
+    val code = this.let { it.toString().takeLast(2).toInt() }
+    val opcode = Opcode.values().find { code == it.code }
+    return opcode ?: throw java.lang.IllegalArgumentException("Illegal opcode: $code, in $this")
 }
 
-fun Int.toOpcode(): Opcode = Opcode.values().find { this == it.code }
-    ?: throw java.lang.IllegalArgumentException("Illegal opcode: $this")
-
-enum class ParamMode {
+internal enum class ParamMode {
     POSITION,
     IMMEDIATE
 }
+
+internal fun Int.toParamModes() = listOf(
+    if (this / 100 % 10 == 1) IMMEDIATE else POSITION,
+    if (this / 1000 % 10 == 1) IMMEDIATE else POSITION,
+    if (this / 10000 % 10 == 1) IMMEDIATE else POSITION
+)
+
+
+internal data class OpContext(
+    val opcodeIdx: Int,
+    private val memory: Memory,
+    val input: Int,
+    val output: Output
+) {
+    val opcode: Opcode = memory[opcodeIdx].toOpcode()
+    private val paramModes: List<ParamMode> = memory[opcodeIdx].toParamModes()
+
+    fun resolveParam(param: Int): Int {
+        return if (paramModes[param - 1] == POSITION)
+            memory[memory[opcodeIdx + param]]
+        else
+            memory[opcodeIdx + param]
+    }
+
+    fun writeAtParam(param: Int, block: () -> Int) {
+        memory[memory[opcodeIdx + param]] = block()
+    }
+}
+

@@ -1,7 +1,7 @@
 package adventofcode.day05
 
-import adventofcode.day05.ParamMode.IMMEDIATE
-import adventofcode.day05.ParamMode.POSITION
+import adventofcode.day05.OpContext.ParamMode.IMMEDIATE
+import adventofcode.day05.OpContext.ParamMode.POSITION
 
 typealias Program = List<Int>
 typealias Memory = MutableList<Int>
@@ -64,18 +64,6 @@ internal fun Int.toOpcode(): Opcode {
     return opcode ?: throw java.lang.IllegalArgumentException("Illegal opcode: $code, in $this")
 }
 
-internal enum class ParamMode {
-    POSITION,
-    IMMEDIATE
-}
-
-internal fun Int.toParamModes() = listOf(
-    if (this / 100 % 10 == 1) IMMEDIATE else POSITION,
-    if (this / 1000 % 10 == 1) IMMEDIATE else POSITION,
-    if (this / 10000 % 10 == 1) IMMEDIATE else POSITION
-)
-
-
 internal data class OpContext(
     val opcodeIdx: Int,
     private val memory: Memory,
@@ -85,15 +73,25 @@ internal data class OpContext(
     val opcode: Opcode = memory[opcodeIdx].toOpcode()
     private val paramModes: List<ParamMode> = memory[opcodeIdx].toParamModes()
 
-    fun resolveParam(param: Int): Int {
-        return if (paramModes[param - 1] == POSITION)
-            memory[memory[opcodeIdx + param]]
-        else
-            memory[opcodeIdx + param]
-    }
+    fun resolveParam(param: Int): Int = paramModes[param - 1].resolve(this, param)
+
+    private fun memoryLookup(param: Int): Int = memory[paramValue(param)]
+
+    private fun paramValue(param: Int): Int = memory[opcodeIdx + param]
 
     fun writeAtParam(param: Int, block: () -> Int) {
         memory[memory[opcodeIdx + param]] = block()
     }
+
+    internal enum class ParamMode(val resolve: (OpContext, Int) -> Int) {
+        POSITION(OpContext::memoryLookup),
+        IMMEDIATE(OpContext::paramValue)
+    }
 }
+
+internal fun Int.toParamModes() = listOf(
+    if (this / 100 % 10 == 1) IMMEDIATE else POSITION,
+    if (this / 1000 % 10 == 1) IMMEDIATE else POSITION,
+    if (this / 10000 % 10 == 1) IMMEDIATE else POSITION
+)
 

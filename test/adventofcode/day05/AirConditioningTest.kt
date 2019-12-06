@@ -1,11 +1,12 @@
 package adventofcode.day05
 
-import adventofcode.day05.ParamMode.IMMEDIATE
-import adventofcode.day05.ParamMode.POSITION
+import adventofcode.day05.OpContext.ParamMode.IMMEDIATE
+import adventofcode.day05.OpContext.ParamMode.POSITION
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
+// https://adventofcode.com/2019/day/5
 class AirConditioningTest {
     @Test
     fun `should extract opcode`() {
@@ -33,53 +34,14 @@ class AirConditioningTest {
         assertEquals(listOf(), IntcodeProcessor("1101,100,-1,4,0".toProgram()).run(-1))
     }
 
-    /**
-     * Thermal Environment Supervision Terminal Manual:
-     *
-     * Opcodes:
-     * 01 - [Opcode, a, b, register] Stores a + b into register. Moves registry pointer 4 places.
-     * 02 - [Opcode, a, b, register] Stores a * b into register. Moves registry pointer 4 places.
-     * 03 - [Opcode, register] Reads from input to register. Moves registry pointer 2 places.
-     * 04 - [Opcode, register] Writes from register to output. Moves registry pointer 2 places.
-     * 99 - [Opcode] Terminates program
-     *
-     * Full opcode:
-     *  A  B  C  DE
-     * [ ][1][0][02]
-     *
-     *   DE - two-digit opcode,      02 == opcode 2
-     *   C - mode of 1st parameter,  0 == position mode
-     *   B - mode of 2nd parameter,  1 == immediate mode
-     *   A - mode of 3rd parameter,  0 == position mode,
-     *   omitted due to being a leading zero
-     *
-     * Parameter modes:
-     * 0 - Position mode - Parameter at this position is a reference to a register
-     * 1 - Immediate mode - Parameter at this position is a value
-     *
-     * Input:
-     * ID - Any integer (Our Air conditioning Unit is 1)
-     *
-     * Output:
-     * Diagnostic code
-     *
-     * Part 1:
-     * It will then perform a series of diagnostic tests confirming that various parts of the Intcode computer, like parameter modes, function correctly. For each test, it will run an output instruction indicating how far the result of the test was from the expected value, where 0 means the test was successful. Non-zero outputs mean that a function is not working correctly; check the instructions that were run before the output instruction to see which one failed.
-     *
-     * What diagnostic code does the program produce for input 1?
-     */
     @Test
     fun `part 1`() {
-        val result = IntcodeProcessor(program1).run(1)
-
-        assertEquals(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 14155342), result)
+        assertEquals(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 14155342), IntcodeProcessor(program1).run(1))
     }
 
     @Test
     fun `part 2`() {
-        val result = IntcodeProcessor(program1).run(5)
-
-        assertEquals(listOf(8684145), result)
+        assertEquals(listOf(8684145), IntcodeProcessor(program1).run(5))
     }
 }
 

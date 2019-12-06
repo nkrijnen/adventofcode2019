@@ -39,6 +39,22 @@ internal enum class Opcode(val code: Int, val execute: (OpContext) -> Int) {
         it.output += it.resolveParam(1)
         it.opcodeIdx + 2
     }),
+    JMP_IF_TRUE(5, {
+        if (it.resolveParam(1) != 0) it.resolveParam(2)
+        else it.opcodeIdx + 3
+    }),
+    JMP_IF_FALSE(6, {
+        if (it.resolveParam(1) == 0) it.resolveParam(2)
+        else it.opcodeIdx + 3
+    }),
+    LT(7, {
+        it.writeAtParam(3) { if (it.resolveParam(1) < it.resolveParam(2)) 1 else 0 }
+        it.opcodeIdx + 4
+    }),
+    EQ(8, {
+        it.writeAtParam(3) { if (it.resolveParam(1) == it.resolveParam(2)) 1 else 0 }
+        it.opcodeIdx + 4
+    }),
     END(99, { -1 })
 }
 

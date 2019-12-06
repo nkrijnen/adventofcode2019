@@ -74,6 +74,13 @@ class AirConditioningTest {
 
         assertEquals(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 14155342), result)
     }
+
+    @Test
+    fun `part 2`() {
+        val result = IntcodeProcessor(program1).run(5)
+
+        assertEquals(listOf(8684145), result)
+    }
 }
 
 private val program1 =

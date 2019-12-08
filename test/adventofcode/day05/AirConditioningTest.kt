@@ -24,24 +24,28 @@ class AirConditioningTest {
     }
 
     @Test
-    fun `sample program`() {
-        assertEquals(listOf(324), IntcodeProcessor("3,0,4,0,99".toProgram()).run(324))
-        assertEquals(listOf(), IntcodeProcessor("1002,4,3,4,33".toProgram()).run(1))
+    fun `sample program 1`() {
+        assertEquals(listOf(324), IntcodeProcessor("3,0,4,0,99".toProgram()).run { 324 })
+    }
+
+    @Test
+    fun `sample program 2`() {
+        assertEquals(listOf(), IntcodeProcessor("1002,4,3,4,33".toProgram()).run { 1 })
     }
 
     @Test
     fun `sample direct program`() {
-        assertEquals(listOf(), IntcodeProcessor("1101,100,-1,4,0".toProgram()).run(-1))
+        assertEquals(listOf(), IntcodeProcessor("1101,100,-1,4,0".toProgram()).run { -1 })
     }
 
     @Test
     fun `part 1`() {
-        assertEquals(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 14155342), IntcodeProcessor(program1).run(1))
+        assertEquals(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 14155342), IntcodeProcessor(program1).run { 1 })
     }
 
     @Test
     fun `part 2`() {
-        assertEquals(listOf(8684145), IntcodeProcessor(program1).run(5))
+        assertEquals(listOf(8684145), IntcodeProcessor(program1).run { 5 })
     }
 }
 

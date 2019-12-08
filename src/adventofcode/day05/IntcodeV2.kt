@@ -5,20 +5,23 @@ import adventofcode.day05.OpContext.ParamMode.POSITION
 
 typealias Program = List<Int>
 typealias Memory = MutableList<Int>
-typealias Output = MutableList<Int>
 
 fun String.toProgram(): Program = this.split(",").map(String::toInt)
 
 class IntcodeProcessor(private val program: Program) {
-    fun run(input: Int): List<Int> {
-        val output: Output = mutableListOf()
+    fun run(inputProvider: () -> Int): List<Int> {
+        val output = mutableListOf<Int>()
+        run(inputProvider, { output += it })
+        return output
+    }
+
+    private fun run(nextInput: () -> Int, consumeOutput: (Int) -> Unit) {
         val memory: Memory = program.toMutableList()
         var opcodeIdx = 0
         while (opcodeIdx >= 0) {
-            val ctx = OpContext(opcodeIdx, memory, input, output)
+            val ctx = OpContext(opcodeIdx, memory, nextInput, consumeOutput)
             opcodeIdx = ctx.opcode.execute(ctx)
         }
-        return output
     }
 }
 
@@ -32,11 +35,11 @@ internal enum class Opcode(val code: Int, val execute: (OpContext) -> Int) {
         it.opcodeIdx + 4
     }),
     INP(3, {
-        it.writeAtParam(1) { it.input }
+        it.writeAtParam(1) { it.nextInput() }
         it.opcodeIdx + 2
     }),
     OUT(4, {
-        it.output += it.resolveParam(1)
+        it.consumeOutput(it.resolveParam(1))
         it.opcodeIdx + 2
     }),
     JMP_IF_TRUE(5, {
@@ -59,7 +62,7 @@ internal enum class Opcode(val code: Int, val execute: (OpContext) -> Int) {
 }
 
 internal fun Int.toOpcode(): Opcode {
-    val code = this.let { it.toString().takeLast(2).toInt() }
+    val code = toString().takeLast(2).toInt()
     val opcode = Opcode.values().find { code == it.code }
     return opcode ?: throw java.lang.IllegalArgumentException("Illegal opcode: $code, in $this")
 }
@@ -67,8 +70,8 @@ internal fun Int.toOpcode(): Opcode {
 internal data class OpContext(
     val opcodeIdx: Int,
     private val memory: Memory,
-    val input: Int,
-    val output: Output
+    val nextInput: () -> Int,
+    val consumeOutput: (Int) -> Unit
 ) {
     val opcode: Opcode = memory[opcodeIdx].toOpcode()
     private val paramModes: List<ParamMode> = memory[opcodeIdx].toParamModes()

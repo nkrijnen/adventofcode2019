@@ -8,57 +8,81 @@ typealias Memory = MutableList<Int>
 
 fun String.toProgram(): Program = this.split(",").map(String::toInt)
 
-class IntcodeProcessor(private val program: Program) {
+class IntcodeProcessor(
+    program: Program,
+    private var nextInput: () -> Int = { -1 }
+) {
+    private val memory: Memory = program.toMutableList()
+    private var opcodeIdx = 0
+
     fun run(inputProvider: () -> Int): List<Int> {
+        nextInput = inputProvider
+        return runUntilEnd()
+    }
+
+    private fun runUntilEnd(): List<Int> {
         val output = mutableListOf<Int>()
-        run(inputProvider, { output += it })
+        try {
+            while (true)
+                output += runUntilOutput()
+        } catch (e: ProgramEndedException) {
+        }
         return output
     }
 
-    private fun run(nextInput: () -> Int, consumeOutput: (Int) -> Unit) {
-        val memory: Memory = program.toMutableList()
-        var opcodeIdx = 0
+    fun runUntilOutput(): Int {
         while (opcodeIdx >= 0) {
-            val ctx = OpContext(opcodeIdx, memory, nextInput, consumeOutput)
-            opcodeIdx = ctx.opcode.execute(ctx)
+            val ctx = OpContext(opcodeIdx, memory, nextInput)//, { return it }) // only allowed for inline function
+            val result = ctx.opcode.execute(ctx)
+            opcodeIdx = result.nextOpcodeIdx
+            if (result.output != null) return result.output
         }
+        throw ProgramEndedException()
     }
 }
 
-internal enum class Opcode(val code: Int, val execute: (OpContext) -> Int) {
+class ProgramEndedException : RuntimeException()
+
+internal class OpcodeResult(val nextOpcodeIdx: Int, val output: Int? = null)
+
+internal enum class Opcode(val code: Int, val execute: (OpContext) -> OpcodeResult) {
     ADD(1, {
         it.writeAtParam(3) { it.resolveParam(1) + it.resolveParam(2) }
-        it.opcodeIdx + 4
+        OpcodeResult(it.opcodeIdx + 4)
     }),
     MUL(2, {
         it.writeAtParam(3) { it.resolveParam(1) * it.resolveParam(2) }
-        it.opcodeIdx + 4
+        OpcodeResult(it.opcodeIdx + 4)
     }),
     INP(3, {
         it.writeAtParam(1) { it.nextInput() }
-        it.opcodeIdx + 2
+        OpcodeResult(it.opcodeIdx + 2)
     }),
     OUT(4, {
-        it.consumeOutput(it.resolveParam(1))
-        it.opcodeIdx + 2
+        //        it.consumeOutput(it.resolveParam(1))
+        OpcodeResult(it.opcodeIdx + 2, it.resolveParam(1))
     }),
     JMP_IF_TRUE(5, {
-        if (it.resolveParam(1) != 0) it.resolveParam(2)
-        else it.opcodeIdx + 3
+        OpcodeResult(
+            if (it.resolveParam(1) != 0) it.resolveParam(2)
+            else it.opcodeIdx + 3
+        )
     }),
     JMP_IF_FALSE(6, {
-        if (it.resolveParam(1) == 0) it.resolveParam(2)
-        else it.opcodeIdx + 3
+        OpcodeResult(
+            if (it.resolveParam(1) == 0) it.resolveParam(2)
+            else it.opcodeIdx + 3
+        )
     }),
     LT(7, {
         it.writeAtParam(3) { if (it.resolveParam(1) < it.resolveParam(2)) 1 else 0 }
-        it.opcodeIdx + 4
+        OpcodeResult(it.opcodeIdx + 4)
     }),
     EQ(8, {
         it.writeAtParam(3) { if (it.resolveParam(1) == it.resolveParam(2)) 1 else 0 }
-        it.opcodeIdx + 4
+        OpcodeResult(it.opcodeIdx + 4)
     }),
-    END(99, { -1 })
+    END(99, { OpcodeResult(-1) })
 }
 
 internal fun Int.toOpcode(): Opcode {
@@ -70,8 +94,7 @@ internal fun Int.toOpcode(): Opcode {
 internal data class OpContext(
     val opcodeIdx: Int,
     private val memory: Memory,
-    val nextInput: () -> Int,
-    val consumeOutput: (Int) -> Unit
+    val nextInput: () -> Int
 ) {
     val opcode: Opcode = memory[opcodeIdx].toOpcode()
     private val paramModes: List<ParamMode> = memory[opcodeIdx].toParamModes()

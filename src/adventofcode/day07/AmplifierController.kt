@@ -2,7 +2,6 @@ package adventofcode.day07
 
 import adventofcode.day05.IntcodeProcessor
 import adventofcode.day05.Program
-import adventofcode.day05.ProgramEndedException
 import kotlin.math.min
 
 internal fun generateCombinations(phaseSettings: IntRange): List<IntArray> {
@@ -63,11 +62,8 @@ class FeedbackAmplifierController(program: Program, phaseSettings: IntRange = 5.
         val p5 = IntcodeProcessor(program) { i5.nextInput() }
 
         // run, until input is required.. then p4.resume until p4 produces output, then use that as input, etc
-        try {
-            while (true)
-                output = p5.runUntilOutput()
-        } catch (e: ProgramEndedException) {
-        }
+        p5.runUntilEnd { output = it }
+
         return output!!
     }
 }

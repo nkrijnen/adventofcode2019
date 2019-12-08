@@ -17,17 +17,16 @@ class IntcodeProcessor(
 
     fun run(inputProvider: () -> Int): List<Int> {
         nextInput = inputProvider
-        return runUntilEnd()
+        val output = mutableListOf<Int>()
+        runUntilEnd { output += it }
+        return output
     }
 
-    private fun runUntilEnd(): List<Int> {
-        val output = mutableListOf<Int>()
+    fun runUntilEnd(consumeOutput: (Int) -> Unit) {
         try {
-            while (true)
-                output += runUntilOutput()
+            while (true) consumeOutput(runUntilOutput())
         } catch (e: ProgramEndedException) {
         }
-        return output
     }
 
     fun runUntilOutput(): Int {
@@ -41,7 +40,7 @@ class IntcodeProcessor(
     }
 }
 
-class ProgramEndedException : RuntimeException()
+private class ProgramEndedException : RuntimeException()
 
 internal class OpcodeResult(val nextOpcodeIdx: Int, val output: Int? = null)
 

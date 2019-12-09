@@ -1,10 +1,9 @@
 package adventofcode.day05
 
-import adventofcode.day05.OpContext.ParamMode.IMMEDIATE
-import adventofcode.day05.OpContext.ParamMode.POSITION
+import adventofcode.day05.OpContext.ParamMode.*
 
 typealias Program = List<Int>
-typealias Memory = MutableList<Int>
+private typealias Memory = MutableMap<Int, Int>
 
 fun String.toProgram(): Program = this.split(",").map(String::toInt)
 
@@ -12,8 +11,9 @@ class IntcodeProcessor(
     program: Program,
     private var nextInput: () -> Int = { -1 }
 ) {
-    private val memory: Memory = program.toMutableList()
+    private val memory: Memory = program.withIndex().associate { Pair(it.index, it.value) }.toMutableMap()
     private var opcodeIdx = 0
+    private var relativeBase = 0
 
     fun run(inputProvider: () -> Int): List<Int> {
         nextInput = inputProvider
@@ -31,7 +31,7 @@ class IntcodeProcessor(
 
     fun runUntilOutput(): Int {
         while (opcodeIdx >= 0) {
-            val ctx = OpContext(opcodeIdx, memory, nextInput)//, { return it }) // only allowed for inline function
+            val ctx = OpContext(opcodeIdx, relativeBase, memory, nextInput, { relativeBase = it })
             val result = ctx.opcode.execute(ctx)
             opcodeIdx = result.nextOpcodeIdx
             if (result.output != null) return result.output
@@ -81,6 +81,10 @@ internal enum class Opcode(val code: Int, val execute: (OpContext) -> OpcodeResu
         it.writeAtParam(3) { if (it.resolveParam(1) == it.resolveParam(2)) 1 else 0 }
         OpcodeResult(it.opcodeIdx + 4)
     }),
+    REL_BASE(9, {
+        it.updateRelativeBase(it.relativeBase + it.resolveParam(1))
+        OpcodeResult(it.opcodeIdx + 2)
+    }),
     END(99, { OpcodeResult(-1) })
 }
 
@@ -92,31 +96,41 @@ internal fun Int.toOpcode(): Opcode {
 
 internal data class OpContext(
     val opcodeIdx: Int,
+    val relativeBase: Int,
     private val memory: Memory,
-    val nextInput: () -> Int
+    val nextInput: () -> Int,
+    val updateRelativeBase: (Int) -> Unit
 ) {
-    val opcode: Opcode = memory[opcodeIdx].toOpcode()
-    private val paramModes: List<ParamMode> = memory[opcodeIdx].toParamModes()
+    val opcode: Opcode = memory[opcodeIdx]!!.toOpcode()
+    private val paramModes: List<ParamMode> = memory[opcodeIdx]!!.toParamModes()
 
     fun resolveParam(param: Int): Int = paramModes[param - 1].resolve(this, param)
 
-    private fun memoryLookup(param: Int): Int = memory[paramValue(param)]
+    private fun memoryLookup(param: Int): Int = memory[paramValue(param)] ?: 0
 
-    private fun paramValue(param: Int): Int = memory[opcodeIdx + param]
+    private fun relativeLookup(param: Int): Int = memory[relativeBase + paramValue(param)] ?: 0
+
+    private fun paramValue(param: Int): Int = memory[opcodeIdx + param]!!
 
     fun writeAtParam(param: Int, block: () -> Int) {
-        memory[memory[opcodeIdx + param]] = block()
+        memory[memory[opcodeIdx + param]!!] = block()
     }
 
     internal enum class ParamMode(val resolve: (OpContext, Int) -> Int) {
         POSITION(OpContext::memoryLookup),
+        RELATIVE(OpContext::relativeLookup),
         IMMEDIATE(OpContext::paramValue)
     }
 }
 
 internal fun Int.toParamModes() = listOf(
-    if (this / 100 % 10 == 1) IMMEDIATE else POSITION,
-    if (this / 1000 % 10 == 1) IMMEDIATE else POSITION,
-    if (this / 10000 % 10 == 1) IMMEDIATE else POSITION
+    (this / 100 % 10).toParamMode(),
+    (this / 1000 % 10).toParamMode(),
+    (this / 1000 % 10).toParamMode()
 )
 
+internal fun Int.toParamMode() = when (this) {
+    1 -> IMMEDIATE
+    2 -> RELATIVE
+    else -> POSITION
+}

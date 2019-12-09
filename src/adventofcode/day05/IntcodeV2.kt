@@ -42,6 +42,35 @@ class IntcodeProcessor(
 
 private class ProgramEndedException : RuntimeException()
 
+internal data class OpContext(
+    val opcodeIdx: Int,
+    val relativeBase: Int,
+    private val memory: Memory,
+    val nextInput: () -> Int,
+    val updateRelativeBase: (Int) -> Unit
+) {
+    val opcode: Opcode = memory[opcodeIdx]!!.toOpcode()
+    private val paramModes: List<ParamMode> = memory[opcodeIdx]!!.toParamModes()
+
+    fun resolveParam(param: Int): Int = paramModes[param - 1].resolve(this, param)
+
+    private fun memoryLookup(param: Int): Int = memory[paramValue(param)] ?: 0
+
+    private fun relativeLookup(param: Int): Int = memory[relativeBase + paramValue(param)] ?: 0
+
+    private fun paramValue(param: Int): Int = memory[opcodeIdx + param]!!
+
+    fun writeAtParam(param: Int, block: () -> Int) {
+        memory[memory[opcodeIdx + param]!!] = block()
+    }
+
+    internal enum class ParamMode(val resolve: (OpContext, Int) -> Int) {
+        POSITION(OpContext::memoryLookup),
+        RELATIVE(OpContext::relativeLookup),
+        IMMEDIATE(OpContext::paramValue)
+    }
+}
+
 internal class OpcodeResult(val nextOpcodeIdx: Int, val output: Int? = null)
 
 internal enum class Opcode(val code: Int, val execute: (OpContext) -> OpcodeResult) {
@@ -92,35 +121,6 @@ internal fun Int.toOpcode(): Opcode {
     val code = toString().takeLast(2).toInt()
     val opcode = Opcode.values().find { code == it.code }
     return opcode ?: throw java.lang.IllegalArgumentException("Illegal opcode: $code, in $this")
-}
-
-internal data class OpContext(
-    val opcodeIdx: Int,
-    val relativeBase: Int,
-    private val memory: Memory,
-    val nextInput: () -> Int,
-    val updateRelativeBase: (Int) -> Unit
-) {
-    val opcode: Opcode = memory[opcodeIdx]!!.toOpcode()
-    private val paramModes: List<ParamMode> = memory[opcodeIdx]!!.toParamModes()
-
-    fun resolveParam(param: Int): Int = paramModes[param - 1].resolve(this, param)
-
-    private fun memoryLookup(param: Int): Int = memory[paramValue(param)] ?: 0
-
-    private fun relativeLookup(param: Int): Int = memory[relativeBase + paramValue(param)] ?: 0
-
-    private fun paramValue(param: Int): Int = memory[opcodeIdx + param]!!
-
-    fun writeAtParam(param: Int, block: () -> Int) {
-        memory[memory[opcodeIdx + param]!!] = block()
-    }
-
-    internal enum class ParamMode(val resolve: (OpContext, Int) -> Int) {
-        POSITION(OpContext::memoryLookup),
-        RELATIVE(OpContext::relativeLookup),
-        IMMEDIATE(OpContext::paramValue)
-    }
 }
 
 internal fun Int.toParamModes() = listOf(

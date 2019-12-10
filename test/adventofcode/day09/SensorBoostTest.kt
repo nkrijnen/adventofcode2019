@@ -24,7 +24,15 @@ internal class SensorBoostTest {
     }
 
     @Test
+    fun `203 opcode fault?`() {
+        val output = IntcodeProcessor("203,100,204,100,109,-1,204,101,4,100,99".toProgram()) { 54 }.run()
+        assertEquals(listOf(54L, 54L, 54L), output)
+    }
+
+    @Test
     fun `part 1`() {
+        val result = IntcodeProcessor(boost_program) { 1 }.run()
+        assertEquals(listOf(-1L), result)
     }
 }
 

@@ -31,7 +31,8 @@ class IntcodeProcessor(
 
     fun runUntilOutput(): Long {
         while (opcodeIdx >= 0) {
-            val ctx = OpContext(opcodeIdx, relativeBase, memory, nextInput, { relativeBase = it })
+            val ctx =
+                OpContext(opcodeIdx, relativeBase, memory, nextInput, { relativeBase = it; println(relativeBase) })
             val result = ctx.opcode.execute(ctx)
             opcodeIdx = result.nextOpcodeIdx
             if (result.output != null) return result.output
@@ -52,22 +53,24 @@ internal data class OpContext(
     val opcode: Opcode = memory[opcodeIdx]!!.toOpcode()
     private val paramModes: List<ParamMode> = memory[opcodeIdx]!!.toParamModes()
 
-    fun resolveParam(param: Int): Long = paramModes[param - 1].resolve(this, param)
-
-    private fun memoryLookup(param: Int): Long = memory[paramValue(param).toInt()] ?: 0
-
-    private fun relativeLookup(param: Int): Long = memory[relativeBase + paramValue(param).toInt()] ?: 0
-
-    private fun paramValue(param: Int): Long = memory[opcodeIdx + param]!!
-
-    fun writeAtParam(param: Long, block: () -> Long) {
-        memory[memory[opcodeIdx + param.toInt()]!!.toInt()] = block()
+    fun resolveParam(param: Int): Long {
+        return memory[resolvePosition(param)] ?: 0
     }
 
-    internal enum class ParamMode(val resolve: (OpContext, Int) -> Long) {
-        POSITION(OpContext::memoryLookup),
-        RELATIVE(OpContext::relativeLookup),
-        IMMEDIATE(OpContext::paramValue)
+    fun write(param: Int, block: () -> Long) {
+        memory[resolvePosition(param)] = block()
+    }
+
+    private fun resolvePosition(param: Int) = paramModes[param - 1].resolveMemoryPosition(this, param)
+
+    private fun immediatePosition(param: Int) = opcodeIdx + param
+    private fun absolutePosition(param: Int) = memory[immediatePosition(param)]!!.toInt()
+    private fun relativePosition(param: Int) = relativeBase + memory[immediatePosition(param)]!!.toInt()
+
+    internal enum class ParamMode(val resolveMemoryPosition: (OpContext, Int) -> Int) {
+        POSITION(OpContext::absolutePosition),
+        RELATIVE(OpContext::relativePosition),
+        IMMEDIATE(OpContext::immediatePosition)
     }
 }
 
@@ -75,15 +78,15 @@ internal class OpcodeResult(val nextOpcodeIdx: Int, val output: Long? = null)
 
 internal enum class Opcode(val code: Int, val execute: (OpContext) -> OpcodeResult) {
     ADD(1, {
-        it.writeAtParam(3) { it.resolveParam(1) + it.resolveParam(2) }
+        it.write(3) { it.resolveParam(1) + it.resolveParam(2) }
         OpcodeResult(it.opcodeIdx + 4)
     }),
     MUL(2, {
-        it.writeAtParam(3) { it.resolveParam(1) * it.resolveParam(2) }
+        it.write(3) { it.resolveParam(1) * it.resolveParam(2) }
         OpcodeResult(it.opcodeIdx + 4)
     }),
     INP(3, {
-        it.writeAtParam(1) { it.nextInput() }
+        it.write(1) { it.nextInput() }
         OpcodeResult(it.opcodeIdx + 2)
     }),
     OUT(4, {
@@ -103,11 +106,11 @@ internal enum class Opcode(val code: Int, val execute: (OpContext) -> OpcodeResu
         )
     }),
     LT(7, {
-        it.writeAtParam(3) { if (it.resolveParam(1) < it.resolveParam(2)) 1 else 0 }
+        it.write(3) { if (it.resolveParam(1) < it.resolveParam(2)) 1 else 0 }
         OpcodeResult(it.opcodeIdx + 4)
     }),
     EQ(8, {
-        it.writeAtParam(3) { if (it.resolveParam(1) == it.resolveParam(2)) 1 else 0 }
+        it.write(3) { if (it.resolveParam(1) == it.resolveParam(2)) 1 else 0 }
         OpcodeResult(it.opcodeIdx + 4)
     }),
     REL_BASE(9, {

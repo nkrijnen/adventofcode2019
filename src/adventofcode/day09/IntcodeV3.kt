@@ -32,7 +32,7 @@ class IntcodeProcessor(
     private fun runUntilOutput(): Long {
         while (opcodeIdx >= 0) {
             val ctx =
-                OpContext(opcodeIdx, relativeBase, memory, nextInput, { relativeBase = it; println(relativeBase) })
+                OpContext(opcodeIdx, relativeBase, memory, nextInput, { relativeBase = it })
             val result = ctx.opcode.execute(ctx)
             opcodeIdx = result.nextOpcodeIdx
             if (result.output != null) return result.output

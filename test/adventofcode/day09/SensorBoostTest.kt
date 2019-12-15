@@ -35,6 +35,12 @@ internal class SensorBoostTest {
         val result = IntcodeProcessor(boost_program) { 1 }.run()
         assertEquals(listOf(3839402290), result)
     }
+
+    @Test
+    fun `part 2`() {
+        val result = IntcodeProcessor(boost_program) { 2 }.run()
+        assertEquals(listOf(35734L), result)
+    }
 }
 
 private val boost_program =

@@ -1,6 +1,7 @@
 package adventofcode.day14
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
 internal class FuelProductionTest {
@@ -118,6 +119,7 @@ internal class FuelProductionTest {
     }
 
     @Test
+    @Tag("slow")
     fun `samples part 2`() {
         assertEquals(
             82892753, Reactor(
@@ -135,6 +137,7 @@ internal class FuelProductionTest {
     }
 
     @Test
+    @Tag("slow")
     fun `part 2`() {
         assertEquals(4200533, Reactor(input.parseReactions()).howMuchFuelForOreInHold())
     }

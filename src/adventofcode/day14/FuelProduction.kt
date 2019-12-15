@@ -6,50 +6,67 @@ import kotlin.math.round
 
 data class Element(val name: String)
 
-data class Amount(val element: Element, val amount: Int)
+data class Amount(val element: Element, val amount: Long)
 
 data class Reaction(
     private val produces: Element,
-    private val batchSize: Int,
+    private val batchSize: Long,
     private val ingredients: Set<Amount>
 ) {
-    internal var totalProduced: Int = 0
-    private var totalUsed: Int = 0
+    internal var totalProduced: Long = 0
+    private var totalUsed: Long = 0
 
-    fun consume(amount: Int, consumeRequired: (Element, Int) -> Unit) {
+    fun consume(amount: Long, consumeRequired: (Element, Long) -> Unit) {
         val amountInStore = totalProduced - totalUsed
         val takenFromStore = min(amount, amountInStore)
         val toProduce = amount - takenFromStore
-        val produced = (ceil(toProduce.toDouble() / batchSize) * batchSize).toInt()
+        val produced = (ceil(toProduce.toDouble() / batchSize) * batchSize).toLong()
 
         if (toProduce > 0) ingredients.forEach { (element, required) ->
-            consumeRequired(element, round(required.toDouble() / batchSize * produced).toInt())
+            consumeRequired(element, round(required.toDouble() / batchSize * produced).toLong())
         }
 
         totalProduced += produced
         totalUsed += takenFromStore + toProduce
-
-        println("+ $produces: produced $totalProduced, used $totalUsed")
     }
 }
 
-class Reactor(reactions: Map<Element, Reaction>) {
-    private val oreReaction = Element("ORE") to Reaction(Element("ORE"), 1, emptySet())
+class Reactor(reactions: Map<Element, Reaction>, private val oreInHold: Long = 1000000000000) {
+    private val ore = Element("ORE")
+    private val fuel = Element("FUEL")
+    private val oreReaction = ore to Reaction(ore, 1, emptySet())
     private val reactions = reactions + oreReaction
 
-    fun howMuchOreForOneFuel(): Int {
-        consume(Element("FUEL"), 1)
+    fun howMuchOreForOneFuel(): Long {
+        consume(fuel, 1)
         return consumedOre
     }
 
-    private fun consume(element: Element, amount: Int) {
-        println("$element: require $amount")
+    fun howMuchFuelForOreInHold(): Long {
+        val oreForOneFuel = howMuchOreForOneFuel()
+        var fuelFromOre = oreInHold / oreForOneFuel
+        // consume base amount (-1 since we already consumed 1 fuel above)
+        consume(fuel, fuelFromOre - 1)
+        try {
+            while (true) {
+                consume(fuel, 1)
+                fuelFromOre++
+            }
+        } catch (e: NotEnoughOreException) {
+        }
+        return fuelFromOre
+    }
+
+    private fun consume(element: Element, amount: Long) {
+        if (element == ore && consumedOre + amount > oreInHold) throw NotEnoughOreException()
         reactions.getValue(element)
             .consume(amount, ::consume)
     }
 
-    private val consumedOre: Int get() = oreReaction.second.totalProduced
+    private val consumedOre: Long get() = oreReaction.second.totalProduced
 }
+
+private class NotEnoughOreException : Exception()
 
 // 15 NRLM, 5 KDXDC, 1 DQRQW => 5 QTSK
 fun String.parseReactions(): Map<Element, Reaction> = this.lines().map {
@@ -68,4 +85,4 @@ fun String.parseReactions(): Map<Element, Reaction> = this.lines().map {
 
 // 5 QTSK
 private fun String.parseAmount() = this.split(" ")
-    .let { (nr, name) -> Amount(Element(name), nr.toInt()) }
+    .let { (nr, name) -> Amount(Element(name), nr.toLong()) }

@@ -14,6 +14,7 @@ internal class SensorBoostTest {
     @Test
     fun `sample program should produce 16 digit number`() {
         val output = IntcodeProcessor("1102,34915192,34915192,7,4,7,99,0".toProgram()).run()
+        println(output)
         assertEquals(16, output[0].toString().length)
     }
 
@@ -32,7 +33,7 @@ internal class SensorBoostTest {
     @Test
     fun `part 1`() {
         val result = IntcodeProcessor(boost_program) { 1 }.run()
-        assertEquals(listOf(-1L), result)
+        assertEquals(listOf(3839402290), result)
     }
 }
 
